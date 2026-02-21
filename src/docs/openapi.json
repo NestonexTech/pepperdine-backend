@@ -1,0 +1,433 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Clean Backend API",
+    "version": "1.0.0",
+    "description": "API documentation for authentication, admin, services, bookings, and plans"
+  },
+  "servers": [
+    { "url": "http://localhost:3000" }
+  ],
+  "tags": [
+    { "name": "Auth" },
+    { "name": "Admin" },
+    { "name": "Services" },
+    { "name": "Bookings" },
+    { "name": "Plans" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "BasicMessage": {
+        "type": "object",
+        "properties": { "message": { "type": "string" } }
+      },
+      "TokenResponse": {
+        "type": "object",
+        "properties": { "token": { "type": "string" } }
+      },
+      "ProtectedResponse": {
+        "type": "object",
+        "properties": { "userId": { "type": "string" } }
+      },
+      "AuthSignupRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "minLength": 8 },
+          "name": { "type": "string" }
+        }
+      },
+      "AuthSignupResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "code": { "type": "string" }
+        }
+      },
+      "VerifyRequest": {
+        "type": "object",
+        "required": ["email", "code"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "code": { "type": "string" }
+        }
+      },
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string" }
+        }
+      },
+      "ResendCodeRequest": {
+        "type": "object",
+        "required": ["email"],
+        "properties": { "email": { "type": "string", "format": "email" } }
+      },
+      "ForgotPasswordRequest": {
+        "type": "object",
+        "required": ["email"],
+        "properties": { "email": { "type": "string", "format": "email" } }
+      },
+      "ResetPasswordRequest": {
+        "type": "object",
+        "required": ["email", "code", "newPassword"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "code": { "type": "string" },
+          "newPassword": { "type": "string", "minLength": 8 }
+        }
+      },
+      "SubService": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "title": { "type": "string" },
+          "duration": { "type": "string" },
+          "price": { "type": "number" },
+          "imageUrl": { "type": "string" }
+        }
+      },
+      "ServiceGroup": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "type": { "type": "string" },
+          "subServices": { "type": "array", "items": { "$ref": "#/components/schemas/SubService" } }
+        }
+      },
+      "ServiceCreateRequest": {
+        "type": "object",
+        "required": ["type", "subServices"],
+        "properties": {
+          "type": { "type": "string" },
+          "subServices": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["title", "price"],
+              "properties": {
+                "title": { "type": "string" },
+                "duration": { "type": "string" },
+                "price": { "type": "number" },
+                "imageUrl": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "ServiceUpdateRequest": { "$ref": "#/components/schemas/ServiceCreateRequest" },
+      "SubServiceUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "duration": { "type": "string" },
+          "price": { "type": "number" },
+          "imageUrl": { "type": "string" }
+        }
+      },
+      "BookingCreateRequest": {
+        "type": "object",
+        "required": ["vehicleType", "vehicleMake", "vehicleModel", "area", "address", "dateTime", "services"],
+        "properties": {
+          "vehicleType": { "type": "string" },
+          "vehicleMake": { "type": "string" },
+          "vehicleModel": { "type": "string" },
+          "licensePlate": { "type": "string" },
+          "area": { "type": "string" },
+          "address": { "type": "string" },
+          "dateTime": { "type": "string", "format": "date-time" },
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["serviceId", "subServiceIds"],
+              "properties": {
+                "serviceId": { "type": "string" },
+                "subServiceIds": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          }
+        }
+      },
+      "Booking": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "vehicleType": { "type": "string" },
+          "vehicleMake": { "type": "string" },
+          "vehicleModel": { "type": "string" },
+          "licensePlate": { "type": "string" },
+          "services": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "serviceId": { "type": "string" },
+                "subServiceIds": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subServiceId": { "type": "string" },
+                "title": { "type": "string" },
+                "duration": { "type": "string" },
+                "price": { "type": "number" },
+                "imageUrl": { "type": "string" }
+              }
+            }
+          },
+          "area": { "type": "string" },
+          "address": { "type": "string" },
+          "dateTime": { "type": "string", "format": "date-time" },
+          "status": { "type": "string" },
+          "totalPrice": { "type": "number" },
+          "totalDurationMinutes": { "type": "number" }
+        }
+      },
+      "Plan": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "code": { "type": "string" },
+          "name": { "type": "string" },
+          "priceAED": { "type": "number" },
+          "savingsAED": { "type": "number" },
+          "included": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": { "type": "string" },
+                "count": { "type": "integer" }
+              }
+            }
+          },
+          "benefits": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "PlanChooseRequest": {
+        "type": "object",
+        "required": ["planCode", "expiresAt"],
+        "properties": {
+          "planCode": { "type": "string" },
+          "expiresAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Subscription": {
+        "type": "object",
+        "properties": {
+          "planId": { "type": "string" },
+          "planCode": { "type": "string" },
+          "planName": { "type": "string" },
+          "priceAED": { "type": "number" },
+          "startedAt": { "type": "string", "format": "date-time" },
+          "expiresAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/auth/signup": {
+      "post": {
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/AuthSignupRequest" } }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthSignupResponse" } } } },
+          "400": { "description": "Bad Request" }
+        }
+      }
+    },
+    "/auth/verify": {
+      "post": {
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/VerifyRequest" } }
+          }
+        },
+        "responses": { "200": { "description": "OK" }, "400": { "description": "Bad Request" } }
+      }
+    },
+    "/auth/resend-code": {
+      "post": {
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResendCodeRequest" } } }
+        },
+        "responses": { "200": { "description": "OK" }, "429": { "description": "Too Many Requests" } }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } }
+        },
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TokenResponse" } } } }, "401": { "description": "Unauthorized" } }
+      }
+    },
+    "/auth/forgot-password": {
+      "post": {
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ForgotPasswordRequest" } } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/auth/reset-password": {
+      "post": {
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResetPasswordRequest" } } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/auth/protected": {
+      "get": {
+        "tags": ["Auth"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProtectedResponse" } } } },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/admin/login": {
+      "post": {
+        "tags": ["Admin"],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } }
+        },
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TokenResponse" } } } } }
+      }
+    },
+    "/admin/services": {
+      "post": {
+        "tags": ["Services"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ServiceCreateRequest" } } }
+        },
+        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ServiceGroup" } } } } }
+      },
+      "get": {
+        "tags": ["Services"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "groups": { "type": "array", "items": { "$ref": "#/components/schemas/ServiceGroup" } } } } } } } }
+      }
+    },
+    "/admin/services/{id}": {
+      "put": {
+        "tags": ["Services"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ServiceUpdateRequest" } } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      },
+      "delete": {
+        "tags": ["Services"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "OK" }, "404": { "description": "Not Found" } }
+      }
+    },
+    "/admin/services/{serviceId}/subservices/{subServiceId}": {
+      "patch": {
+        "tags": ["Services"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "serviceId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "subServiceId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubServiceUpdateRequest" } } }
+        },
+        "responses": { "200": { "description": "OK" }, "404": { "description": "Not Found" } }
+      },
+      "delete": {
+        "tags": ["Services"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "serviceId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "subServiceId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "OK" }, "404": { "description": "Not Found" } }
+      }
+    },
+    "/services": {
+      "get": {
+        "tags": ["Services"],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "groups": { "type": "array", "items": { "$ref": "#/components/schemas/ServiceGroup" } } } } } } } }
+      }
+    },
+    "/bookings": {
+      "post": {
+        "tags": ["Bookings"],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BookingCreateRequest" } } }
+        },
+        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "booking": { "$ref": "#/components/schemas/Booking" } } } } } } }
+      }
+    },
+    "/plans": {
+      "get": {
+        "tags": ["Plans"],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "plans": { "type": "array", "items": { "$ref": "#/components/schemas/Plan" } } } } } }
+          }
+        }
+      }
+    },
+    "/plans/choose": {
+      "post": {
+        "tags": ["Plans"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanChooseRequest" } } }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "subscription": { "$ref": "#/components/schemas/Subscription" } } } } }
+          }
+        }
+      }
+    }
+  }
+}
