@@ -11,6 +11,8 @@ const schema = new mongoose.Schema(
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, required: true, trim: true },
     phoneNo: { type: String, required: true, trim: true },
+    CWID: { type: String, trim: true },
+    location: { type: String, trim: true },
     role: { type: String, default: "user" },
     passwordHash: { type: String, required: true },
     verified: { type: Boolean, default: false },
