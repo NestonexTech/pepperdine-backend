@@ -4,6 +4,8 @@ const { connectDB } = require("./config/db");
 const { seedAdminIfMissing } = require("./config/seedAdmin");
 const authRoutes = require("./routes/auth");
 const adminRoutes = require("./routes/admin");
+const restaurantAuthRoutes = require("./routes/restaurantAuth");
+const menuRoutes = require("./routes/menu");
 
 const openapi = require("./docs/openapi.json");
 const app = express();
@@ -13,6 +15,8 @@ connectDB();
 seedAdminIfMissing().catch(() => {});
 
 app.use("/auth", authRoutes);
+app.use("/restaurant-auth", restaurantAuthRoutes);
+app.use("/menu", menuRoutes);
 app.use("/admin", adminRoutes);
 
 app.get("/", (req, res) => {

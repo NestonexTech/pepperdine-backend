@@ -2,7 +2,9 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const Admin = require("../models/Admin");
 const User = require("../models/User");
+const Restaurant = require("../models/Restaurant");
 const { sendDriverCredentialsEmail } = require("../services/mailer");
+
 async function adminLogin(req, res) {
   try {
     const email = String(req.body.email || "")
@@ -25,4 +27,52 @@ async function adminLogin(req, res) {
   }
 }
 
-module.exports = { adminLogin };
+function toRestaurantListItem(doc) {
+  const o = doc.toObject ? doc.toObject() : doc;
+  const { passwordHash, emailVerificationCode, emailVerificationExpires, lastEmailCodeSentAt, passwordResetCode, passwordResetExpires, ...rest } = o;
+  return rest;
+}
+
+async function listRestaurants(req, res) {
+  try {
+    const status = req.query.status; // pending | approved | rejected
+    const filter = {};
+    if (status && ["pending", "approved", "rejected"].includes(status)) {
+      filter.status = status;
+    }
+    const restaurants = await Restaurant.find(filter).sort({ createdAt: -1 }).lean();
+    const list = restaurants.map((r) => {
+      const { passwordHash, emailVerificationCode, emailVerificationExpires, lastEmailCodeSentAt, passwordResetCode, passwordResetExpires, ...rest } = r;
+      return rest;
+    });
+    return res.json({ restaurants: list });
+  } catch (e) {
+    return res.status(500).json({ error: "list_failed" });
+  }
+}
+
+async function approveRestaurant(req, res) {
+  try {
+    const restaurant = await Restaurant.findById(req.params.id);
+    if (!restaurant) return res.status(404).json({ error: "not_found" });
+    restaurant.status = "approved";
+    await restaurant.save();
+    return res.json({ message: "restaurant_approved", restaurant: toRestaurantListItem(restaurant) });
+  } catch (e) {
+    return res.status(500).json({ error: "approve_failed" });
+  }
+}
+
+async function rejectRestaurant(req, res) {
+  try {
+    const restaurant = await Restaurant.findById(req.params.id);
+    if (!restaurant) return res.status(404).json({ error: "not_found" });
+    restaurant.status = "rejected";
+    await restaurant.save();
+    return res.json({ message: "restaurant_rejected", restaurant: toRestaurantListItem(restaurant) });
+  } catch (e) {
+    return res.status(500).json({ error: "reject_failed" });
+  }
+}
+
+module.exports = { adminLogin, listRestaurants, approveRestaurant, rejectRestaurant };
