@@ -1,58 +1,72 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "Clean Backend API",
+    "title": "Pepperdine Backend API",
     "version": "1.0.0",
-    "description": "API documentation for authentication, admin, services, bookings, and plans"
+    "description": "API for user auth, profile, restaurant auth, admin (restaurant approve/reject), and menu (add items, get by restaurant)."
   },
-  "servers": [
-    { "url": "http://localhost:3000" }
-  ],
+  "servers": [{ "url": "http://localhost:3000" }],
   "tags": [
-    { "name": "Auth" },
-    { "name": "Admin" },
-    { "name": "Services" },
-    { "name": "Bookings" },
-    { "name": "Plans" }
+    {
+      "name": "Auth",
+      "description": "User signup, login, verify email, password reset"
+    },
+    { "name": "Profile", "description": "User profile get/update" },
+    {
+      "name": "Restaurant Auth",
+      "description": "Restaurant signup, login, verify, password reset"
+    },
+    {
+      "name": "Restaurant Menu",
+      "description": "Add menu items (restaurant), get menu (public)"
+    },
+    {
+      "name": "Admin",
+      "description": "Admin login, list/approve/reject restaurants"
+    }
   ],
   "components": {
     "securitySchemes": {
       "bearerAuth": {
         "type": "http",
         "scheme": "bearer",
-        "bearerFormat": "JWT"
+        "bearerFormat": "JWT",
+        "description": "User token from /auth/login"
+      },
+      "restaurantAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Restaurant token from /restaurant-auth/login"
+      },
+      "adminAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Admin token from /admin/login"
       }
     },
     "schemas": {
-      "BasicMessage": {
+      "Error": {
         "type": "object",
-        "properties": { "message": { "type": "string" } }
+        "properties": { "error": { "type": "string" } }
       },
       "TokenResponse": {
         "type": "object",
         "properties": { "token": { "type": "string" } }
       },
-      "ProtectedResponse": {
-        "type": "object",
-        "properties": { "userId": { "type": "string" } }
-      },
       "AuthSignupRequest": {
         "type": "object",
-        "required": ["email", "password"],
+        "required": ["firstName", "lastName", "phoneNo", "email", "password"],
         "properties": {
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "phoneNo": { "type": "string" },
           "email": { "type": "string", "format": "email" },
-          "password": { "type": "string", "minLength": 8 },
-          "name": { "type": "string" }
+          "password": { "type": "string", "minLength": 8 }
         }
       },
-      "AuthSignupResponse": {
-        "type": "object",
-        "properties": {
-          "message": { "type": "string" },
-          "code": { "type": "string" }
-        }
-      },
-      "VerifyRequest": {
+      "AuthVerifyRequest": {
         "type": "object",
         "required": ["email", "code"],
         "properties": {
@@ -87,155 +101,113 @@
           "newPassword": { "type": "string", "minLength": 8 }
         }
       },
-      "SubService": {
+      "UserProfile": {
         "type": "object",
         "properties": {
           "_id": { "type": "string" },
-          "title": { "type": "string" },
-          "duration": { "type": "string" },
-          "price": { "type": "number" },
-          "imageUrl": { "type": "string" }
+          "email": { "type": "string" },
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "phoneNo": { "type": "string" },
+          "CWID": { "type": "string" },
+          "location": { "type": "string" },
+          "role": { "type": "string" },
+          "verified": { "type": "boolean" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
         }
       },
-      "ServiceGroup": {
+      "ProfileUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "phoneNo": { "type": "string" },
+          "CWID": { "type": "string" },
+          "location": { "type": "string" }
+        }
+      },
+      "RestaurantSignupRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "phoneNo",
+          "name",
+          "restaurantName",
+          "restaurantLocation",
+          "license",
+          "taxID"
+        ],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "minLength": 8 },
+          "phoneNo": { "type": "string" },
+          "name": { "type": "string" },
+          "restaurantName": { "type": "string" },
+          "restaurantLocation": { "type": "string" },
+          "license": { "type": "string" },
+          "taxID": { "type": "string" }
+        }
+      },
+      "RestaurantListItem": {
         "type": "object",
         "properties": {
           "_id": { "type": "string" },
-          "type": { "type": "string" },
-          "subServices": { "type": "array", "items": { "$ref": "#/components/schemas/SubService" } }
-        }
-      },
-      "ServiceCreateRequest": {
-        "type": "object",
-        "required": ["type", "subServices"],
-        "properties": {
-          "type": { "type": "string" },
-          "subServices": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": ["title", "price"],
-              "properties": {
-                "title": { "type": "string" },
-                "duration": { "type": "string" },
-                "price": { "type": "number" },
-                "imageUrl": { "type": "string" }
-              }
-            }
-          }
-        }
-      },
-      "ServiceUpdateRequest": { "$ref": "#/components/schemas/ServiceCreateRequest" },
-      "SubServiceUpdateRequest": {
-        "type": "object",
-        "properties": {
-          "title": { "type": "string" },
-          "duration": { "type": "string" },
-          "price": { "type": "number" },
-          "imageUrl": { "type": "string" }
-        }
-      },
-      "BookingCreateRequest": {
-        "type": "object",
-        "required": ["vehicleType", "vehicleMake", "vehicleModel", "area", "address", "dateTime", "services"],
-        "properties": {
-          "vehicleType": { "type": "string" },
-          "vehicleMake": { "type": "string" },
-          "vehicleModel": { "type": "string" },
-          "licensePlate": { "type": "string" },
-          "area": { "type": "string" },
-          "address": { "type": "string" },
-          "dateTime": { "type": "string", "format": "date-time" },
-          "services": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "required": ["serviceId", "subServiceIds"],
-              "properties": {
-                "serviceId": { "type": "string" },
-                "subServiceIds": { "type": "array", "items": { "type": "string" } }
-              }
-            }
-          }
-        }
-      },
-      "Booking": {
-        "type": "object",
-        "properties": {
-          "_id": { "type": "string" },
-          "vehicleType": { "type": "string" },
-          "vehicleMake": { "type": "string" },
-          "vehicleModel": { "type": "string" },
-          "licensePlate": { "type": "string" },
-          "services": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "serviceId": { "type": "string" },
-                "subServiceIds": { "type": "array", "items": { "type": "string" } }
-              }
-            }
+          "email": { "type": "string" },
+          "phoneNo": { "type": "string" },
+          "name": { "type": "string" },
+          "restaurantName": { "type": "string" },
+          "restaurantLocation": { "type": "string" },
+          "license": { "type": "string" },
+          "taxID": { "type": "string" },
+          "verified": { "type": "boolean" },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "approved", "rejected"]
           },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "MenuItemAddRequest": {
+        "type": "object",
+        "required": ["name", "price", "category"],
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "price": { "type": "number", "minimum": 0 },
+          "category": { "type": "string" }
+        }
+      },
+      "MenuItemResponse": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "price": { "type": "number" }
+        }
+      },
+      "MenuCategory": {
+        "type": "object",
+        "properties": {
+          "category": { "type": "string" },
           "items": {
             "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "subServiceId": { "type": "string" },
-                "title": { "type": "string" },
-                "duration": { "type": "string" },
-                "price": { "type": "number" },
-                "imageUrl": { "type": "string" }
-              }
-            }
-          },
-          "area": { "type": "string" },
-          "address": { "type": "string" },
-          "dateTime": { "type": "string", "format": "date-time" },
-          "status": { "type": "string" },
-          "totalPrice": { "type": "number" },
-          "totalDurationMinutes": { "type": "number" }
+            "items": { "$ref": "#/components/schemas/MenuItemResponse" }
+          }
         }
       },
-      "Plan": {
+      "MenuResponse": {
         "type": "object",
         "properties": {
-          "_id": { "type": "string" },
-          "code": { "type": "string" },
-          "name": { "type": "string" },
-          "priceAED": { "type": "number" },
-          "savingsAED": { "type": "number" },
-          "included": {
+          "restaurantId": { "type": "string" },
+          "restaurantName": { "type": "string" },
+          "categories": {
             "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "title": { "type": "string" },
-                "count": { "type": "integer" }
-              }
-            }
-          },
-          "benefits": { "type": "array", "items": { "type": "string" } }
-        }
-      },
-      "PlanChooseRequest": {
-        "type": "object",
-        "required": ["planCode", "expiresAt"],
-        "properties": {
-          "planCode": { "type": "string" },
-          "expiresAt": { "type": "string", "format": "date-time" }
-        }
-      },
-      "Subscription": {
-        "type": "object",
-        "properties": {
-          "planId": { "type": "string" },
-          "planCode": { "type": "string" },
-          "planName": { "type": "string" },
-          "priceAED": { "type": "number" },
-          "startedAt": { "type": "string", "format": "date-time" },
-          "expiresAt": { "type": "string", "format": "date-time" }
+            "items": { "$ref": "#/components/schemas/MenuCategory" }
+          }
         }
       }
     }
@@ -244,56 +216,119 @@
     "/auth/signup": {
       "post": {
         "tags": ["Auth"],
+        "summary": "User signup",
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": { "schema": { "$ref": "#/components/schemas/AuthSignupRequest" } }
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AuthSignupRequest" }
+            }
           }
         },
         "responses": {
-          "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthSignupResponse" } } } },
-          "400": { "description": "Bad Request" }
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "code": {
+                      "type": "string",
+                      "description": "Only when EMAIL_DEBUG_CODES=true"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "409": { "description": "Email in use" }
         }
       }
     },
     "/auth/verify": {
       "post": {
         "tags": ["Auth"],
+        "summary": "Verify email with code",
         "requestBody": {
           "required": true,
           "content": {
-            "application/json": { "schema": { "$ref": "#/components/schemas/VerifyRequest" } }
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AuthVerifyRequest" }
+            }
           }
         },
-        "responses": { "200": { "description": "OK" }, "400": { "description": "Bad Request" } }
+        "responses": {
+          "200": { "description": "OK" },
+          "400": { "description": "Bad Request" },
+          "404": { "description": "Not found" }
+        }
       }
     },
     "/auth/resend-code": {
       "post": {
         "tags": ["Auth"],
+        "summary": "Resend verification code",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResendCodeRequest" } } }
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ResendCodeRequest" }
+            }
+          }
         },
-        "responses": { "200": { "description": "OK" }, "429": { "description": "Too Many Requests" } }
+        "responses": {
+          "200": { "description": "OK" },
+          "429": { "description": "Resend too soon" }
+        }
       }
     },
     "/auth/login": {
       "post": {
         "tags": ["Auth"],
+        "summary": "User login",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } }
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
         },
-        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TokenResponse" } } } }, "401": { "description": "Unauthorized" } }
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenResponse" }
+              }
+            }
+          },
+          "401": { "description": "Invalid credentials" },
+          "403": { "description": "Email not verified" }
+        }
       }
     },
     "/auth/forgot-password": {
       "post": {
         "tags": ["Auth"],
+        "summary": "Request password reset code",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ForgotPasswordRequest" } } }
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ForgotPasswordRequest" }
+            }
+          }
         },
         "responses": { "200": { "description": "OK" } }
       }
@@ -301,131 +336,410 @@
     "/auth/reset-password": {
       "post": {
         "tags": ["Auth"],
+        "summary": "Reset password with code",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ResetPasswordRequest" } } }
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ResetPasswordRequest" }
+            }
+          }
         },
-        "responses": { "200": { "description": "OK" } }
+        "responses": {
+          "200": { "description": "OK" },
+          "400": { "description": "Bad Request" }
+        }
+      }
+    },
+    "/auth/profile": {
+      "get": {
+        "tags": ["Profile"],
+        "summary": "Get current user profile",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserProfile" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Not found" }
+        }
+      },
+      "patch": {
+        "tags": ["Profile"],
+        "summary": "Partial update profile (firstName, lastName, phoneNo, CWID, location)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ProfileUpdateRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserProfile" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
       }
     },
     "/auth/protected": {
       "get": {
         "tags": ["Auth"],
+        "summary": "Test protected route",
         "security": [{ "bearerAuth": [] }],
         "responses": {
-          "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProtectedResponse" } } } },
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "userId": { "type": "string" } }
+                }
+              }
+            }
+          },
           "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restaurant-auth/signup": {
+      "post": {
+        "tags": ["Restaurant Auth"],
+        "summary": "Restaurant signup",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RestaurantSignupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Created" },
+          "400": { "description": "Bad Request" },
+          "409": { "description": "Email in use" }
+        }
+      }
+    },
+    "/restaurant-auth/verify": {
+      "post": {
+        "tags": ["Restaurant Auth"],
+        "summary": "Verify restaurant email",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AuthVerifyRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "OK" },
+          "400": { "description": "Bad Request" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/restaurant-auth/resend-code": {
+      "post": {
+        "tags": ["Restaurant Auth"],
+        "summary": "Resend restaurant verification code",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ResendCodeRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "OK" },
+          "429": { "description": "Resend too soon" }
+        }
+      }
+    },
+    "/restaurant-auth/login": {
+      "post": {
+        "tags": ["Restaurant Auth"],
+        "summary": "Restaurant login (only when verified and approved)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenResponse" }
+              }
+            }
+          },
+          "401": { "description": "Invalid credentials" },
+          "403": {
+            "description": "Email not verified / pending approval / rejected"
+          }
+        }
+      }
+    },
+    "/restaurant-auth/forgot-password": {
+      "post": {
+        "tags": ["Restaurant Auth"],
+        "summary": "Restaurant forgot password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ForgotPasswordRequest" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/restaurant-auth/reset-password": {
+      "post": {
+        "tags": ["Restaurant Auth"],
+        "summary": "Restaurant reset password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ResetPasswordRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "OK" },
+          "400": { "description": "Bad Request" }
+        }
+      }
+    },
+    "/restaurant-auth/me": {
+      "get": {
+        "tags": ["Restaurant Auth"],
+        "summary": "Current restaurant id (protected)",
+        "security": [{ "restaurantAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "restaurantId": { "type": "string" } }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/restaurant-auth/menu/items": {
+      "post": {
+        "tags": ["Restaurant Menu"],
+        "summary": "Add menu item (approved restaurants only)",
+        "security": [{ "restaurantAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/MenuItemAddRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "item": { "$ref": "#/components/schemas/MenuItemResponse" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad Request" },
+          "403": { "description": "Only approved restaurants can add menu" },
+          "404": { "description": "Restaurant not found" }
+        }
+      }
+    },
+    "/menu": {
+      "get": {
+        "tags": ["Restaurant Menu"],
+        "summary": "Get restaurant menu by category (public)",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Restaurant ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MenuResponse" }
+              }
+            }
+          },
+          "400": { "description": "Missing restaurantId" },
+          "404": { "description": "Restaurant not found" }
+        }
+      }
+    },
+    "/menu/{restaurantId}": {
+      "get": {
+        "tags": ["Restaurant Menu"],
+        "summary": "Get restaurant menu by category (by path)",
+        "parameters": [
+          {
+            "name": "restaurantId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/MenuResponse" }
+              }
+            }
+          },
+          "404": { "description": "Restaurant not found" }
         }
       }
     },
     "/admin/login": {
       "post": {
         "tags": ["Admin"],
+        "summary": "Admin login",
         "requestBody": {
           "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/LoginRequest" } } }
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          }
         },
-        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TokenResponse" } } } } }
-      }
-    },
-    "/admin/services": {
-      "post": {
-        "tags": ["Services"],
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ServiceCreateRequest" } } }
-        },
-        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ServiceGroup" } } } } }
-      },
-      "get": {
-        "tags": ["Services"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "groups": { "type": "array", "items": { "$ref": "#/components/schemas/ServiceGroup" } } } } } } } }
-      }
-    },
-    "/admin/services/{id}": {
-      "put": {
-        "tags": ["Services"],
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ServiceUpdateRequest" } } }
-        },
-        "responses": { "200": { "description": "OK" } }
-      },
-      "delete": {
-        "tags": ["Services"],
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
-        "responses": { "200": { "description": "OK" }, "404": { "description": "Not Found" } }
-      }
-    },
-    "/admin/services/{serviceId}/subservices/{subServiceId}": {
-      "patch": {
-        "tags": ["Services"],
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          { "name": "serviceId", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "subServiceId", "in": "path", "required": true, "schema": { "type": "string" } }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SubServiceUpdateRequest" } } }
-        },
-        "responses": { "200": { "description": "OK" }, "404": { "description": "Not Found" } }
-      },
-      "delete": {
-        "tags": ["Services"],
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          { "name": "serviceId", "in": "path", "required": true, "schema": { "type": "string" } },
-          { "name": "subServiceId", "in": "path", "required": true, "schema": { "type": "string" } }
-        ],
-        "responses": { "200": { "description": "OK" }, "404": { "description": "Not Found" } }
-      }
-    },
-    "/services": {
-      "get": {
-        "tags": ["Services"],
-        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "groups": { "type": "array", "items": { "$ref": "#/components/schemas/ServiceGroup" } } } } } } } }
-      }
-    },
-    "/bookings": {
-      "post": {
-        "tags": ["Bookings"],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BookingCreateRequest" } } }
-        },
-        "responses": { "201": { "description": "Created", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "booking": { "$ref": "#/components/schemas/Booking" } } } } } } }
-      }
-    },
-    "/plans": {
-      "get": {
-        "tags": ["Plans"],
         "responses": {
           "200": {
             "description": "OK",
-            "content": { "application/json": { "schema": { "type": "object", "properties": { "plans": { "type": "array", "items": { "$ref": "#/components/schemas/Plan" } } } } } }
-          }
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenResponse" }
+              }
+            }
+          },
+          "401": { "description": "Invalid credentials" }
         }
       }
     },
-    "/plans/choose": {
-      "post": {
-        "tags": ["Plans"],
-        "security": [{ "bearerAuth": [] }],
-        "requestBody": {
-          "required": true,
-          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PlanChooseRequest" } } }
-        },
+    "/admin/restaurants": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "List restaurants (optional filter by status)",
+        "security": [{ "adminAuth": [] }],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "approved", "rejected"]
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "OK",
-            "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "subscription": { "$ref": "#/components/schemas/Subscription" } } } } }
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "restaurants": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RestaurantListItem"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/admin/restaurants/{id}/approve": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Approve restaurant",
+        "security": [{ "adminAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
           }
+        ],
+        "responses": {
+          "200": { "description": "OK" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/admin/restaurants/{id}/reject": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Reject restaurant",
+        "security": [{ "adminAuth": [] }],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "OK" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Not found" }
         }
       }
     }
