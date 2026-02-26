@@ -7,6 +7,7 @@ const adminRoutes = require("./routes/admin");
 const restaurantAuthRoutes = require("./routes/restaurantAuth");
 const menuRoutes = require("./routes/menu");
 const restaurantRoutes = require("./routes/restaurants");
+const orderRoutes = require("./routes/orders");
 
 const openapi = require("./docs/openapi.json");
 const app = express();
@@ -20,6 +21,7 @@ app.use("/restaurant-auth", restaurantAuthRoutes);
 app.use("/menu", menuRoutes);
 app.use("/admin", adminRoutes);
 app.use("/restaurants", restaurantRoutes);
+app.use("/orders", orderRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "backend_running" });
