@@ -68,6 +68,16 @@ async function placeOrder(req, res) {
       status: "new",
     });
 
+    // increment restaurant's "new" orders count
+    try {
+      await Restaurant.updateOne(
+        { _id: restaurant._id },
+        { $inc: { newOrdersCount: 1 } }
+      );
+    } catch (_) {
+      // ignore counter errors so order placement still succeeds
+    }
+
     return res.status(201).json({
       message: "order_placed",
       order: {

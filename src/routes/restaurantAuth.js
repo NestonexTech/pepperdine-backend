@@ -8,6 +8,7 @@ const {
   resetPassword,
 } = require("../controllers/restaurantAuthController");
 const { addMenuItem } = require("../controllers/menuController");
+const { updateOrderStatus } = require("../controllers/restaurantOrderController");
 const { decodeRestaurantToken } = require("../middleware/restaurantAuth");
 
 const router = express.Router();
@@ -24,5 +25,8 @@ router.get("/me", decodeRestaurantToken, (req, res) => {
 });
 
 router.post("/menu/items", decodeRestaurantToken, addMenuItem);
+
+// Restaurant can update status of its own orders
+router.patch("/orders/:orderId/status", decodeRestaurantToken, updateOrderStatus);
 
 module.exports = router;

@@ -23,6 +23,11 @@ const schema = new mongoose.Schema(
     lastEmailCodeSentAt: { type: Date },
     passwordResetCode: { type: String },
     passwordResetExpires: { type: Date },
+
+    // Order status counts for this restaurant
+    newOrdersCount: { type: Number, default: 0, min: 0 },
+    preparingOrdersCount: { type: Number, default: 0, min: 0 },
+    completedOrdersCount: { type: Number, default: 0, min: 0 },
   },
   { timestamps: true }
 );
