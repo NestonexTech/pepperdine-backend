@@ -21,6 +21,7 @@ const schema = new mongoose.Schema(
     lastEmailCodeSentAt: { type: Date },
     passwordResetCode: { type: String },
     passwordResetExpires: { type: Date },
+    mealPoints: { type: Number, default: 0, min: 0 },
   },
   { timestamps: true },
 );
