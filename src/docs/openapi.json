@@ -3,7 +3,7 @@
   "info": {
     "title": "Pepperdine Backend API",
     "version": "1.0.0",
-    "description": "API for user auth, profile, restaurant auth, admin (restaurant approve/reject), and menu (add items, get by restaurant)."
+    "description": "API for user auth, profile, restaurant auth, admin (restaurant approve/reject), menu (add items, get by restaurant), restaurants (list/get), and orders (place order)."
   },
   "servers": [{ "url": "http://localhost:3000" }],
   "tags": [
@@ -23,6 +23,14 @@
     {
       "name": "Admin",
       "description": "Admin login, list/approve/reject restaurants"
+    },
+    {
+      "name": "Restaurants",
+      "description": "List and get approved restaurants (public)"
+    },
+    {
+      "name": "Orders",
+      "description": "Place order (user JWT)"
     }
   ],
   "components": {
@@ -208,6 +216,68 @@
             "type": "array",
             "items": { "$ref": "#/components/schemas/MenuCategory" }
           }
+        }
+      },
+      "PublicRestaurant": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "name": { "type": "string" },
+          "restaurantName": { "type": "string" },
+          "restaurantLocation": { "type": "string" },
+          "verified": { "type": "boolean" },
+          "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+          "newOrdersCount": { "type": "number" },
+          "preparingOrdersCount": { "type": "number" },
+          "completedOrdersCount": { "type": "number" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "OrderItemInput": {
+        "type": "object",
+        "required": ["quantity"],
+        "properties": {
+          "menuItemId": { "type": "string", "description": "MenuItem _id (or use menuItem / id)" },
+          "quantity": { "type": "integer", "minimum": 1 }
+        }
+      },
+      "PlaceOrderRequest": {
+        "type": "object",
+        "required": ["restaurantId", "items", "paymentType"],
+        "properties": {
+          "restaurantId": { "type": "string" },
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/OrderItemInput" }
+          },
+          "deliveryLocation": { "type": "string" },
+          "roomNo": { "type": "string" },
+          "tip": { "type": "number", "minimum": 0 },
+          "paymentType": { "type": "string", "enum": ["full_card", "split_mealpoints_card"] }
+        }
+      },
+      "OrderResponse": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "restaurant": { "type": "string" },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "menuItem": { "type": "string" },
+                "quantity": { "type": "number" }
+              }
+            }
+          },
+          "deliveryLocation": { "type": "string" },
+          "roomNo": { "type": "string" },
+          "tip": { "type": "number" },
+          "paymentType": { "type": "string" },
+          "status": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
         }
       }
     }
@@ -740,6 +810,98 @@
           "200": { "description": "OK" },
           "401": { "description": "Unauthorized" },
           "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/restaurants": {
+      "get": {
+        "tags": ["Restaurants"],
+        "summary": "List approved restaurants (public)",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "restaurants": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/PublicRestaurant" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/restaurants/{id}": {
+      "get": {
+        "tags": ["Restaurants"],
+        "summary": "Get one approved restaurant by id (public)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "restaurant": { "$ref": "#/components/schemas/PublicRestaurant" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Missing id" },
+          "404": { "description": "Not found" },
+          "500": { "description": "Server error" }
+        }
+      }
+    },
+    "/orders": {
+      "post": {
+        "tags": ["Orders"],
+        "summary": "Place order (user)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/PlaceOrderRequest" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "order": { "$ref": "#/components/schemas/OrderResponse" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad Request (missing/invalid restaurantId, items, paymentType)" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Restaurant not found" },
+          "500": { "description": "Server error" }
         }
       }
     }
