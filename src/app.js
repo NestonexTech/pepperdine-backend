@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const { connectDB } = require("./config/db");
 const { seedAdminIfMissing } = require("./config/seedAdmin");
+// const { seedSampleDataIfEmpty } = require("./config/seedData");
 const authRoutes = require("./routes/auth");
 const adminRoutes = require("./routes/admin");
 const restaurantAuthRoutes = require("./routes/restaurantAuth");
@@ -15,6 +16,7 @@ app.use(cors({ origin: "*" }));
 app.use(express.json());
 connectDB();
 seedAdminIfMissing().catch(() => {});
+// seedSampleDataIfEmpty().catch(() => {});
 
 app.use("/auth", authRoutes);
 app.use("/restaurant-auth", restaurantAuthRoutes);
